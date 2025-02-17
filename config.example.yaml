@@ -1,0 +1,81 @@
+eco:
+  # The interval between each cluster verification by the operator.
+  check-interval: 15s
+  # The time after which, an unhealthy member will be removed from the cluster.
+  unhealthy-member-ttl: 30s
+  # Configuration of the etcd instance.
+  etcd:
+    # The address that clients should use to connect to the etcd cluster (i.e.
+    # load balancer public address - hostname only, no schema or port number).
+    advertise-address:
+    # The directory where the etcd data is stored.
+    data-dir: /var/lib/etcd
+    # The TLS configuration for clients communication.
+    client-transport-security:
+      auto-tls: false
+      cert-file:
+      key-file:
+      trusted-ca-file:
+      client-cert-auth: false
+    # The TLS configuration for peers communication.
+    peer-transport-security:
+      auto-tls: true
+      cert-file:
+      key-file:
+      trusted-ca-file:
+      peer-client-cert-auth: false
+    # Defines the maximum amount of data that etcd can store, in bytes, before going into maintenance mode.
+    backend-quota: 2147483648
+    # Defines the auto-compaction policy (set retention to 0 to disable).
+    auto-compaction-mode: periodic
+    auto-compaction-retention: "0"
+    # Defines the initial acl that will be applied to the etcd during provisioning.
+    init-acl:
+      rootPassword: rootpw # Optional
+      roles:
+      - name: k8s-apiserver
+        permissions:
+        - mode: readwrite
+          key: /registry # Default value for k8s keys.
+          prefix: true
+      - name: k8s-agent
+        permissions:
+        - mode: readwrite
+          key: /kubernetes-agent
+          prefix: true
+      - name: range-example-role
+        permissions:
+        - mode: read
+          key: /foo1
+          rangeEnd: /foo5 # Gives read permission to [/foo1, /foo5).
+      users:
+      - name: k8s-apiserver
+        roles:
+        - k8s-apiserver
+      - name: k8s-agent
+        roles:
+        - k8s-agent
+      - name: ranger-user
+        password: foo # Password is optional.
+        roles:
+        - range-example-role
+
+    # Configuration for the jwt auth token (optional).
+    jwt-auth-token-config:
+      sign-method: RS512 # Default to 'RS512', (optional).
+      private-key-file: /etc/eco/eco-jwt-key.private
+      public-key-file: /etc/eco/eco-jwt-key.public
+      ttl: 10m # Default to '10m', (optional).
+      
+  # Configuration of the auto-scaling group provider.
+  asg:
+    provider: aws
+  # Configuration of the snapshot provider.
+  snapshot:
+    provider: s3
+    # The interval between each snapshot.
+    interval: 30m
+    # The time after which a backup has to be deleted.
+    ttl: 24h
+    # The bucket where snapshots are stored when using the S3 provider.
+    bucket: eco-kubernetes
